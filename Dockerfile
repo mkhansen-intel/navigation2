@@ -40,11 +40,11 @@ RUN apt-get install -y \
     ros-$ROS1_DISTRO-gazebo-ros
 
 # install map_server dependencies
-RUN apt-get install -y \
-    libsdl-image1.2 \
-    libsdl-image1.2-dev \
-    libsdl1.2debian \
-    libsdl1.2-dev
+#RUN apt-get install -y \
+#    libsdl-image1.2 \
+#    libsdl-image1.2-dev \
+#    libsdl1.2debian \
+#    libsdl1.2-dev
 
 WORKDIR /ros2_ws
 

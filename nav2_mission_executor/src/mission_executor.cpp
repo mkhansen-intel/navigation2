@@ -105,7 +105,7 @@ MissionExecutor::execute(const nav2_tasks::ExecuteMissionCommand::SharedPtr comm
         return TaskStatus::FAILED;
 
       case TaskStatus::RUNNING:
-        RCLCPP_INFO(get_logger(), "MissionExecutor: Current mission task still running.");
+        RCLCPP_DEBUG(get_logger(), "MissionExecutor: Current mission task still running.");
         break;
 
       default:

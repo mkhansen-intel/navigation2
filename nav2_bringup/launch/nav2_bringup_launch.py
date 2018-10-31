@@ -7,6 +7,10 @@ def generate_launch_description():
     map_file = launch.substitutions.LaunchConfiguration('map')
     map_type = launch.substitutions.LaunchConfiguration('map_type')
     return LaunchDescription([
+        launch.actions.DeclareLaunchArgument(
+            'map', description='Full path to map file to load'),
+        launch.actions.DeclareLaunchArgument(
+            'map_type', default_value='occupancy',description='Type of map'),
         launch.actions.TimerAction(
 	    actions = [
 		launch_ros.actions.Node( package='nav2_map_server', 

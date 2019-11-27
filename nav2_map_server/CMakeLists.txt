@@ -14,6 +14,7 @@ find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(GRAPHICSMAGICKCPP REQUIRED)
+find_package(resource_retriever REQUIRED)
 
 nav2_package()
 
@@ -45,12 +46,14 @@ set(map_server_dependencies
   yaml_cpp_vendor
   std_msgs
   tf2
-  nav2_util)
+  nav2_util
+  resource_retriever)
 
 set(map_saver_dependencies
   rclcpp
   nav_msgs
-  tf2)
+  tf2
+  resource_retriever)
 
 ament_target_dependencies(${map_server_executable}
   ${map_server_dependencies})
@@ -71,7 +74,9 @@ target_include_directories(${library_name} SYSTEM PRIVATE
   ${GRAPHICSMAGICKCPP_INCLUDE_DIRS})
 
 target_link_libraries(${library_name}
-  ${GRAPHICSMAGICKCPP_LIBRARIES})
+  ${GRAPHICSMAGICKCPP_LIBRARIES}
+  resource_retriever::resource_retriever
+)
 
 install(TARGETS ${map_server_executable} ${library_name} ${map_saver_executable}
   ARCHIVE DESTINATION lib

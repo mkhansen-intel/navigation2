@@ -109,6 +109,9 @@ protected:
     std::string yaml_file,
     std::shared_ptr<nav2_msgs::srv::LoadMap::Response> response = nullptr);
 
+  // read a resource into a temp file
+  std::string read_to_temp(const std::string & filename, bool img_file = false);
+
   // A service to provide the occupancy grid (GetMap) and the message to return
   rclcpp::Service<nav_msgs::srv::GetMap>::SharedPtr occ_service_;
 

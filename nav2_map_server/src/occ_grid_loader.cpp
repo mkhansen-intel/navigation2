@@ -42,6 +42,7 @@
 #include "yaml-cpp/yaml.h"
 #include "nav2_util/geometry_utils.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
+#include "resource_retriever/retriever.h"
 
 using namespace std::chrono_literals;
 
@@ -74,10 +75,43 @@ T yaml_get_value(const YAML::Node & node, const std::string & key)
   }
 }
 
+std::string OccGridLoader::read_to_temp(const std::string & filename, bool img_file)
+{
+  // Use resource retriever to get the file into memory
+  resource_retriever::Retriever retriever;
+  resource_retriever::MemoryResource resource;
+  resource = retriever.get(filename);
+  // Save the resource to a temporary file
+  std::string tmp_filename = std::tmpnam(nullptr);
+  std::FILE * tmpf;
+  if (img_file) {
+    tmpf = std::fopen(tmp_filename.c_str(), "wb");
+    std::fwrite(resource.data.get(), sizeof(resource.data.get()[0]), resource.size, tmpf);
+  } else {
+    tmpf = std::fopen(tmp_filename.c_str(), "w");
+    std::fputs(reinterpret_cast<char *>(resource.data.get()), tmpf);
+  }
+  std::fclose(tmpf);
+  return tmp_filename;
+}
+
 OccGridLoader::LoadParameters OccGridLoader::load_map_yaml(const std::string & yaml_filename)
 {
-  YAML::Node doc = YAML::LoadFile(yaml_filename);
-  LoadParameters loadParameters;
+  YAML::Node doc;
+
+  if ((yaml_filename.find("package") == 0) ||
+    (yaml_filename.find("http") == 0) ||
+    (yaml_filename.find("file") == 0))
+  {
+    // Download the file to a temporary file
+    std::string tmp_filename = read_to_temp(yaml_filename);
+    doc = YAML::LoadFile(tmp_filename);
+    // Remove temp file
+    std::remove(tmp_filename.c_str());
+  } else {
+    // assume this is a path to a file
+    doc = YAML::LoadFile(yaml_filename);
+  }
 
   auto image_file_name = yaml_get_value<std::string>(doc, "image");
   if (image_file_name.empty()) {
@@ -89,6 +123,8 @@ OccGridLoader::LoadParameters OccGridLoader::load_map_yaml(const std::string & y
     fname_copy.push_back('\0');
     image_file_name = std::string(dirname(fname_copy.data())) + '/' + image_file_name;
   }
+
+  LoadParameters loadParameters;
   loadParameters.image_file_name = image_file_name;
 
   loadParameters.resolution = yaml_get_value<double>(doc, "resolution");
@@ -206,6 +242,7 @@ nav2_util::CallbackReturn OccGridLoader::on_configure(const rclcpp_lifecycle::St
         return;
       }
       RCLCPP_INFO(node_->get_logger(), "OccGridLoader: Handling LoadMap request");
+
       // Load from file
       if (loadMapFromYaml(request->map_url, response)) {
         response->map = *msg_;
@@ -265,7 +302,22 @@ void OccGridLoader::loadMapFromFile(const LoadParameters & loadParameters)
 
   RCLCPP_INFO(node_->get_logger(), "Loading image_file: %s",
     loadParameters.image_file_name.c_str());
-  Magick::Image img(loadParameters.image_file_name);
+
+  Magick::Image img;
+
+  if ((loadParameters.image_file_name.find("package") == 0) ||
+    (loadParameters.image_file_name.find("http") == 0) ||
+    (loadParameters.image_file_name.find("file") == 0))
+  {
+    // Download the file to a temporary file
+    std::string tmp_filename = read_to_temp(loadParameters.image_file_name, true);
+    img.read(tmp_filename);
+    // Remove temp file
+    std::remove(tmp_filename.c_str());
+  } else {
+    img.read(loadParameters.image_file_name);
+  }
+
 
   // Copy the image data into the map structure
   msg.info.width = img.size().width();

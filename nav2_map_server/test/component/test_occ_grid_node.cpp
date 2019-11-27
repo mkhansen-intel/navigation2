@@ -114,7 +114,7 @@ TEST_F(TestNode, LoadMap)
   RCLCPP_INFO(node_->get_logger(), "Waiting for load_map service");
   ASSERT_TRUE(client->wait_for_service());
 
-  req->map_url = path(TEST_DIR) / path(g_valid_yaml_file);
+  req->map_url = path("file://") / path(TEST_DIR) / path(g_valid_yaml_file);
   auto resp = send_request<nav2_msgs::srv::LoadMap>(node_, client, req);
 
   ASSERT_EQ(resp->result, nav2_msgs::srv::LoadMap::Response::RESULT_SUCCESS);
@@ -124,6 +124,24 @@ TEST_F(TestNode, LoadMap)
   for (unsigned int i = 0; i < resp->map.info.width * resp->map.info.height; i++) {
     ASSERT_EQ(g_valid_image_content[i], resp->map.data[i]);
   }
+}
+
+TEST_F(TestNode, LoadMapURL)
+{
+  RCLCPP_INFO(node_->get_logger(), "Testing LoadMap service");
+  auto req = std::make_shared<nav2_msgs::srv::LoadMap::Request>();
+  auto client = node_->create_client<nav2_msgs::srv::LoadMap>("load_map");
+
+  RCLCPP_INFO(node_->get_logger(), "Waiting for load_map service");
+  ASSERT_TRUE(client->wait_for_service());
+
+  req->map_url =
+    "https://raw.githubusercontent.com/ros-planning/navigation2/master";
+  req->map_url += "/nav2_map_server/test/testmap.yaml";
+  RCLCPP_INFO(node_->get_logger(), "Sending load_map request with http: url");
+  auto resp = send_request<nav2_msgs::srv::LoadMap>(node_, client, req);
+
+  ASSERT_EQ(resp->result, nav2_msgs::srv::LoadMap::Response::RESULT_SUCCESS);
 }
 
 TEST_F(TestNode, LoadMapNull)
@@ -167,7 +185,7 @@ TEST_F(TestNode, LoadMapInvalidImage)
   RCLCPP_INFO(node_->get_logger(), "Waiting for load_map service");
   ASSERT_TRUE(client->wait_for_service());
 
-  req->map_url = path(TEST_DIR) / "invalid_image.yaml";
+  req->map_url = path("file://") / path(TEST_DIR) / "invalid_image.yaml";
   RCLCPP_INFO(node_->get_logger(), "Sending load_map request with invalid image file name");
   auto resp = send_request<nav2_msgs::srv::LoadMap>(node_, client, req);
 
